@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace="com.mes2.mapper.product_Mapper">
+  
+	
+  	<insert id="insert" parameterType="com.mes2.metadata.domain.md_productDTO">
+  		INSERT INTO meta_data_product (product_code, name, category, unit, cost, price, ofileName)
+    	VALUES (#{product_code}, #{name}, #{category}, #{unit}, #{cost}, #{price}, #{ofileName})
+  	</insert>
+  	
+  	<!--  공통코드 가져오는 부분 -->
+  	<select id="common" resultType="String">
+	  	select code_code
+	  	from common_code
+	  	where code_name = #{category}
+	</select>
+	
+	<!-- 숫자가 제일 큰 품목코드 -->
+	<select id="number" resultType="String">
+		SELECT MAX(product_code)
+		FROM meta_data_product
+		where product_code LIKE concat(#{commoncode}, '%')	
+	</select>
+  	
+  	
+  	<update id="update" parameterType="com.mes2.metadata.domain.md_productDTO">
+  	
+  	UPDATE meta_data_product
+    SET
+        name = #{name},
+       
+        unit = #{unit},
+        cost = #{cost},
+        price = #{price},
+        production_status = #{production_status}       
+        <if test="ofileName != null">
+         ,   ofileName = #{ofileName}
+        </if>
+    WHERE
+        product_code = #{product_code}
+  	</update>
+  	
+  	
+  	<delete id="delete" parameterType="com.mes2.metadata.domain.md_productDTO">
+	  	delete from meta_data_product
+	  	where product_code = #{product_code} 	
+  	</delete>
+  	
+  	<!-- 글 갯수 세기 -->
+  	<select id="count" resultType="int">
+  		select count(*) from meta_data_product
+  		<where>	  		
+	  		
+	  		<if test="startDate !=null and endDate !=null and !startDate.equals('') and !endDate.equals('')">
+	  		and regdate between #{startDate} and #{endDate}
+	  		</if>
+	  		
+	  		
+	  		<if test="search !=null and !search.equals('')">
+	  		and name like '%${search }%'
+	  		</if>
+  		</where> 	
+  	</select>
+  	
+  	<!-- 리스트 가져가기 -->
+  	<select id="list" resultType="com.mes2.metadata.domain.md_productDTO">
+  		
+  		select * from meta_data_product
+  		
+  		<where>  		
+	  		<if test="startDate != null and endDate != null and !startDate.equals('') and !endDate.equals('')">
+	  		and regdate between #{startDate} and #{endDate}
+	  		</if>
+	  		
+	  		<if test="search !=null and !search.equals('')">
+	  		and name like '%${search }%'
+	  		</if>
+  		</where>
+  		order by product_code
+  		<if test="cri != null">
+  		limit #{cri.startPage},#{cri.pageSize} 	
+  		</if>
+  		
+  	</select>
+  		
+	<!-- 카테고리 공코 -->
+	<select id="selectbox" resultType="com.mes2.metadata.domain.common_DTO">
+		SELECT *
+		FROM common_code
+		where code_group_name = "제품분류";	
+	</select>
+	
+	<!-- 단위 공코 -->
+	<select id="selectbox2" resultType="com.mes2.metadata.domain.common_DTO">
+		SELECT *
+		FROM common_code
+		where code_group_name = "기준단위";	
+	</select>
+	
+  </mapper>
+  

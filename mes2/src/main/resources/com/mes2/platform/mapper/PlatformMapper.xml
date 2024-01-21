@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="com.mes2.platform.mapper.PlatformMapper">
+	<resultMap type="com.mes2.platform.domain.SoiDTO" id="order">
+		<id property="order_code" column="order_code" />
+		<result property="order_code" column="order_code" />
+		<result property="order_date" column="order_date" />
+		<result property="sales_status" column="sales_status" />
+		<result property="sign_file_name" column="sign_file_name" />
+		<collection property="sopList" resultMap="detail" />
+	</resultMap>
+	
+	<resultMap type="com.mes2.platform.domain.SopDTO" id="detail">
+		<id property="product_code" column="product_code" />
+		<result property="product_code" column="product_code" />
+		<result property="sales_quantity" column="sales_quantity" />
+		<association property="mdpDTO" resultMap="product" />
+	</resultMap>
+	
+	<resultMap type="com.mes2.platform.domain.MdpDTO" id="product">
+		<result property="name" column="name" />
+		<result property="price" column="price" />
+	</resultMap>
+	
+	
+	<!-- 로그인 -->
+	<select id="read" resultType="com.mes2.platform.domain.MdbDTO">
+		SELECT * FROM meta_data_business 
+		WHERE company_code = #{company_code} AND contract_status = 1
+	</select>
+	
+	<!-- 품목 목록 조회 -->
+	<select id="inqueryProduct" resultType="com.mes2.platform.domain.MdpDTO">
+		SELECT * FROM meta_data_product 
+		<where>
+			<if test="searchType.equals('품목코드')">
+				AND product_code LIKE concat('%' , #{search}, '%')
+			</if>
+			<if test="searchType.equals('품목명')">
+				AND name LIKE concat('%' , #{search}, '%')
+			</if>
+		</where>
+		AND category = '완제품' 
+		AND production_status = 1
+		ORDER BY product_code
+		<if test="cri != null">
+			LIMIT #{cri.startPage}, #{cri.pageSize}
+		</if>
+	</select>
+	
+	<!-- 품목 개수 조회 -->
+	<select id="getCountInqueryProduct" resultType="int">
+		SELECT count(*) FROM meta_data_product 
+		<where>
+			<if test="searchType.equals('품목코드')">
+				AND product_code LIKE concat('%' , #{search}, '%')
+			</if>
+			<if test="searchType.equals('품목명')">
+				AND name LIKE concat('%' , #{search}, '%')
+			</if>
+		</where>
+		AND category = '완제품' 
+		AND production_status = 1
+	</select>
+	
+	<!-- 품목 하나 선택 -->
+	<select id="selectProduct" resultType="com.mes2.platform.domain.MdpDTO">
+		SELECT * FROM meta_data_product 
+		WHERE product_code = #{product_code}
+	</select>
+	
+	<!-- 발주 공통코드 -->
+	<select id="getCommonCode" resultType="String">
+		SELECT code_group FROM common_code 
+		WHERE code_group_name = '발주'
+	</select>
+	
+	<!-- 금일 주문건 중 마지막 주문번호 -->
+	<select id="countTodayOrder" resultType="String">
+		SELECT order_code FROM sales_order_info 
+		WHERE order_code LIKE concat('%', #{checkCode}, '%') 
+		ORDER BY sales_index DESC 
+		LIMIT 1
+	</select>
+	
+	<!-- 발주 신청 -->
+	<insert id="insertOrder" >
+		INSERT into sales_order_info (order_code, company_code, order_date) 
+		VALUES (#{order_code}, #{company_code}, #{order_date})
+	</insert>
+	
+	<!-- 발주 신청 품목 입력 -->
+	<insert id="insertOrderProduct">
+		INSERT into sales_order_product (order_code, product_code, sales_quantity) 
+		VALUES 
+		<foreach collection="list" item="sopDTO" separator=", ">
+		(#{sopDTO.order_code}, #{sopDTO.product_code}, #{sopDTO.sales_quantity})
+		</foreach>	
+	</insert>
+	
+	<!-- 주문(발주) 목록 조회 -->
+	<select id="getOrderList" resultType="com.mes2.platform.domain.SoiDTO">
+		SELECT * FROM sales_order_info
+		<where>
+			company_code = #{company_code}
+			<if test="sales_status != null and !sales_status.equals('')">
+				AND sales_status = #{sales_status}
+			</if>
+			<if test="startDate != null and endDate != null and !startDate.equals('') and !endDate.equals('') ">
+                AND request_date BETWEEN CAST(#{startDate} as DATE) AND CAST(#{endDate} as DATE) + 1
+			</if>
+		</where> 
+		ORDER BY sales_index desc
+		LIMIT #{cri.startPage}, #{cri.pageSize}
+	</select>
+	
+	<!-- 주문 개수 조회 -->
+	<select id="getTotalOrderCount" resultType="int">
+		SELECT count(*) FROM sales_order_info
+		<where>
+			company_code = #{company_code}
+			<if test="sales_status != null and !sales_status.equals('')">
+				AND sales_status = #{sales_status}
+			</if>
+			<if test="startDate != null and endDate != null and !startDate.equals('') and !endDate.equals('') ">
+                AND request_date BETWEEN CAST(#{startDate} as DATE) AND CAST(#{endDate} as DATE) + 1
+			</if>
+		</where>
+	</select>
+	
+	<!-- 주문 상세 조회(주문 품목 조회) -->
+	<select id="getOrderDetail" resultMap="order">
+		SELECT soi.order_code, soi.order_date, sales_status, sign_file_name, sop.product_code, sop.sales_quantity, mdp.name, mdp.price
+		FROM sales_order_info soi 
+		JOIN sales_order_product sop
+		ON soi.order_code = sop.order_code
+		JOIN meta_data_product mdp
+		ON sop.product_code = mdp.product_code
+		WHERE soi.order_code = #{order_code}
+	</select>
+	
+	<!-- 주문번호에 해당하는 주문번호, 품목코드만 조회(수정할 때 사용) -->
+	<select id="getOrderProduct" resultType="com.mes2.platform.domain.SopDTO">
+		SELECT order_code, product_code FROM sales_order_product
+		WHERE order_code = #{order_code}
+	</select>
+	
+	<!-- 취소 품목 삭제 -->
+	<delete id="deleteOrderProduct">
+			DELETE FROM sales_order_product
+			WHERE order_code = #{order_code} AND product_code = #{product_code} AND product_status = 'requested'
+	</delete>
+	
+	<!-- 주문 수량 변경 -->
+	<update id="modifyOrder">
+	    <foreach collection="list" item="sopDTO" separator=";">
+	        UPDATE sales_order_product 
+	        SET sales_quantity = #{sopDTO.sales_quantity} 
+	        WHERE order_code = #{sopDTO.order_code} AND product_code = #{sopDTO.product_code} AND product_status = 'requested'
+	    </foreach>
+	</update>
+
+	<!-- 주문 수정 일자 업데이트 -->
+	<update id="updateOrderDate">
+		UPDATE sales_order_info 
+		SET update_date = now() 
+		WHERE order_code = #{order_code}
+	</update>
+	
+	<!-- 주문 취소 -->
+	<delete id="deleteOrder">
+		DELETE FROM sales_order_info 
+		WHERE order_code = #{order_code}
+	</delete>
+	
+	<!-- 비밀번호 변경 -->
+	<update id="modifyPw">
+		UPDATE meta_data_business 
+		SET pw = #{checkPw} 
+		WHERE company_code = #{company_code} AND pw = #{pw}
+	</update>
+	
+	<!-- 수령 완료(출하 테이블 progress_status는 complete로, confirm_status는 파일명으로) -->
+	<update id="completeShipping">
+		UPDATE shipping 
+		SET progress_status='complete', confirm_status = #{sign_file_name} 
+		WHERE order_code = #{order_code}
+	</update>
+	
+	<!-- 수령 완료(수주 테이블 order_status는 complete로, sign_file_name은 파일명으로) -->
+	<update id="completeOrder">
+		UPDATE sales_order_info 
+		SET sales_status = 'complete', complete_date = now(), sign_file_name = #{sign_file_name}
+		WHERE order_code = #{order_code}
+	</update>
+</mapper>

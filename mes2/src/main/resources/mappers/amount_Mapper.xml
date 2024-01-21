@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace="com.mes2.mapper.amount_Mapper">
+  
+	
+  	<insert id="insert" parameterType="com.mes2.metadata.domain.md_amountDTO">
+  		INSERT INTO meta_data_required_amount (product_code, material_code, amount, amount_unit)
+    	VALUES (#{product_code}, #{material_code}, #{amount}, #{amount_unit})
+  	</insert>
+  	
+  		
+  	<update id="update" parameterType="com.mes2.metadata.domain.md_amountDTO">
+  	
+  	UPDATE meta_data_required_amount
+    SET
+    	product_code = #{product_code},
+        material_code = #{material_code},
+        amount = #{amount},
+        <!-- amount_unit = #{amount_unit}, -->
+        modification_date = NOW()    
+    WHERE
+        `index` = #{index }
+  	</update>
+  	
+  	
+  	<delete id="delete" parameterType="com.mes2.metadata.domain.md_amountDTO">
+	  	delete from meta_data_required_amount
+	  	where `index` = #{index } 	
+  	</delete>
+  	
+  	<!-- 글 갯수 세기 -->
+  	<select id="count" resultType="int">
+  		select count(*) from meta_data_required_amount
+  		<where>  		  		
+	  		<if test="search !=null and !search.equals('')">
+	  		and product_code like '%${search }%'
+	  		</if>
+  		</where> 	
+  	</select>
+  	
+  	<!-- 리스트 가져가기 -->
+  	<select id="list" resultType="com.mes2.metadata.domain.md_amountDTO">
+  		
+  		select * from meta_data_required_amount
+  		
+  		<where>  			  		
+	  		<if test="search !=null and !search.equals('')">
+	  		and product_code like '%${search }%'
+	  		</if>
+  		</where>
+  		order by product_code
+  		<if test="cri != null">
+  		limit #{cri.startPage},#{cri.pageSize} 	
+  		</if>
+  		
+  		
+  		
+  	</select>
+  	
+  	<!-- 완제품코드 가져가기 -->
+	<select id="selectbox" resultType="com.mes2.metadata.domain.md_productDTO">
+		SELECT *
+		FROM meta_data_product
+		where product_code LIKE CONCAT('PS', '%');	
+	</select>
+	
+	<!-- 원재료코드 가져가기 -->
+	<select id="selectbox2" resultType="com.mes2.metadata.domain.md_productDTO">
+		SELECT *
+		FROM meta_data_product
+		where product_code LIKE CONCAT('RP', '%');	
+	</select>
+	
+	<!-- 단위 공통코드 가져가기 -->
+	<select id="selectbox3" resultType="String">
+		SELECT unit
+		FROM meta_data_product
+		where product_code = #{product_code};	
+	</select>
+	
+	<select id="selectbox4" resultType="String">
+		SELECT unit
+		FROM meta_data_product
+		where product_code = #{product_code};	
+	</select>
+	
+  		
+	
+  </mapper>
+  

@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <!-- InstructionsMapper.xml -->
+  
+<mapper namespace="com.mes2.mapper.InstructionsMapper">
+
+	<resultMap type="com.mes2.production.domain.InstructionsDTO" id="instructionsDTOMap">
+		<result property="code" column="code"/>
+		<result property="line" column="line"/>
+		<result property="mdpCode" column="mdp_code"/>
+		<result property="type" column="type"/>
+		<result property="sopCode" column="sop_code"/>
+		<result property="dueDate" column="due_date"/>
+		<result property="startTime" column="start_time"/>
+		<result property="endTime" column="end_time"/>
+		<result property="empId" column="emp_id"/>
+		<result property="state" column="state"/>
+		<result property="quantity" column="quantity"/>
+		<result property="fault" column="fault"/>
+		<result property="salesQuantity" column="sales_quantity"/>	
+		<result property="targetQuantity" column="target_quantity"/>	
+			
+	</resultMap>
+	
+	<resultMap type="com.mes2.production.etc.RequestMaterialsDTO" id="requestMaterialsDTOMap">
+		<result property="productCode" column="product_code"/>
+		<result property="name" column="name"/>
+		<result property="unit" column="unit"/>
+		<result property="cost" column="cost"/>
+		<result property="price" column="price"/>
+		<collection property="materialList" resultMap="requestMaterialDTOMap"/>
+	</resultMap>
+	
+	<resultMap type="com.mes2.production.etc.RequestMaterialDTO" id="requestMaterialDTOMap">
+		<result property="index" column="index" />
+		<result property="productCode" column="product_code" />
+		<result property="materialCode" column="material_code" />
+		<result property="amount" column="amount" />
+		<result property="amountUnit" column="amount_unit" />
+		<result property="registrationDate" column="registration_date" />
+	</resultMap>
+	
+	<insert id ="insertInstructionForStandBy">
+		insert into instructions
+		(code, line, mdp_code, type, sop_code, due_date, state)
+		values (#{code},#{line},#{mdpCode},#{type},#{sopCode},#{dueDate}, #{state})
+	</insert>
+	
+	<!-- 혹시 대비를 위한  -->
+	<update id="updateAccept">
+		update instructions
+		set code=#{code}, line=#{line}, due_date = #{dueDate}, type=#{type},  state = 'WAITING', emp_id = #{empId} , target_quantity = #{targetQuantity} 
+		where sop_code = #{sopCode}
+	</update>
+	
+	<select id="selectByCode" resultMap="instructionsDTOMap" parameterType="String">
+		select *
+		from instructions iss 
+<!-- 		join sales_order_product sop 
+		on iss.sop_code = sop.sales_code --> 
+		where code = #{value}
+	</select>
+	
+	<update id="updateState">
+		update instructions
+		set state=#{state}
+		<if test ="state.equals('PROGRESSING')">
+			, start_time = now() , emp_id =#{empId}
+		</if>
+		
+		where code = #{code}
+	</update>
+	
+	<!-- 작업지시 시작 -->
+	<update id="updateStart">
+		update instructions
+		set start_time = now(), state = 'start', emp_id = #{empNum}
+		where code = #{code}
+	</update>
+	
+	<!-- 작업지시 종료 -->
+	<update id="updateComplete">
+		update instructions
+		set end_time = now(), state = 'COMPLETE', quantity = #{quantity}, fault = #{fault}
+		where code = #{code}
+	</update>
+	
+	<!-- 서치 총 카운트 -->
+	<select id="selectBySearchParamCodeForTotalCount" resultType="int">
+		select count(*)
+		from instructions 
+		<where>
+			<if test="state !=null and !state.equals('')">
+				<![CDATA[
+            	and state = #{state}
+            	]]>   
+            </if>
+		
+			<if test="searchType.equals('isCode') and code!=null and !code.equals('')">
+            	<![CDATA[
+               	and code like concat('%',#{code},'%')
+               ]]> 
+            </if>
+
+			<if test="searchType.equals('sopCode') and code!=null and !code.equals('')">
+            	<![CDATA[
+               	and sop_code like concat('%',#{code},'%')
+               ]]> 
+            </if>
+            
+            <if test="searchType.equals('mdpCode') and code!=null and !code.equals('')">
+            	<![CDATA[
+               	and mdp_code like concat('%',#{code},'%')
+               ]]> 
+            </if>
+		
+            <if test="searchType==null and code !=null and !code.equals('')">
+               <![CDATA[
+               	and code like concat('%',#{code},'%')
+               ]]>    
+            </if>
+            
+            <if test="searchType.equals('') and code !=null and !code.equals('')">
+               <![CDATA[
+               	and code like concat('%',#{code},'%')
+               ]]>    
+            </if>
+                
+            <if test="state == null or state.equals('')">
+            	and state != 'REQUESTED'
+            </if>
+            
+
+            <if test="startDate != null and endDate != null ">
+                AND due_Date between #{startDate} AND #{endDate}
+            </if>	     
+         </where>
+	</select>
+	
+	
+	
+	<select id="selectBySearchParamCode" resultMap="instructionsDTOMap">
+		select * 
+		from instructions 
+		<where>
+			<if test="state !=null and !state.equals('')">
+				<![CDATA[
+            	and state = #{state}
+            	]]>   
+            </if>
+		
+			<if test="searchType.equals('isCode') and code!=null and !code.equals('')">
+            	<![CDATA[
+               	and code like concat('%',#{code},'%')
+               ]]> 
+            </if>
+
+			<if test="searchType.equals('sopCode') and code!=null and !code.equals('')">
+            	<![CDATA[
+               	and sop_code like concat('%',#{code},'%')
+               ]]> 
+            </if>
+            
+            <if test="searchType.equals('mdpCode') and code!=null and !code.equals('')">
+            	<![CDATA[
+               	and mdp_code like concat('%',#{code},'%')
+               ]]> 
+            </if>
+		
+            <if test="searchType==null and code !=null and !code.equals('')">
+               <![CDATA[
+               	and code like concat('%',#{code},'%')
+               ]]>    
+            </if>
+            
+            <if test="searchType.equals('') and code !=null and !code.equals('')">
+               <![CDATA[
+               	and code like concat('%',#{code},'%')
+               ]]>    
+            </if>
+            
+                
+            <if test="state == null or state.equals('')">
+            	and state != 'REQUESTED'
+            </if>
+            
+
+            <if test="startDate != null and endDate != null ">
+                AND due_Date between #{startDate} AND #{endDate}
+            </if>
+            
+
+         </where>
+         ORDER BY is_index desc
+		LIMIT #{startPage}, #{pageSize}
+	</select>
+
+	<select id="selectBySearchParamSoiCode"  resultType="com.mes2.production.domain.InstructionsDTO">
+		select * 
+		from instructions 
+		<where>
+            <if test="code !=null and !code.equals('')">
+                and code like concat('%',#{code},'%')
+            </if>
+            
+            <if test="state !=null and !state.equals('')">
+                and state = #{state}
+            </if>
+           
+            <if test="startTime != null  and endTime != null ">
+               <![CDATA[ 
+               AND start_time BETWEEN #{startTime} AND #{endTime} && end_time BETWEEN #{startTime} AND #{endTime}
+            	]]>
+            </if>	
+            
+            <if test="startTime != null  and endTime = null ">
+                <![CDATA[ AND start_time > #{startTime}]]>
+            </if>	
+
+			<if test="startTime = null  and endTime != null ">
+                <![CDATA[ AND end_time < #{endTime} ]]>
+            </if>
+         </where>
+	</select>
+	
+	<select id="selectBySearchParamMdpCode"  resultType="com.mes2.production.domain.InstructionsDTO">
+		select * 
+		from instructions 
+		<where>
+            <if test="code !=null and !code.equals('')">
+                and mdp_code like concat('%',#{code},'%')
+            </if>
+            
+            <if test="state !=null and !state.equals('')">
+                and state = #{state}
+            </if>
+           
+            <if test="startTime != null  and endTime != null ">
+             	<![CDATA[
+                AND start_time BETWEEN #{startTime} AND #{endTime} && end_time BETWEEN #{startTime} AND #{endTime}
+            	]]>
+            </if>	
+            
+            <if test="startTime != null  and endTime = null ">
+                <![CDATA[ AND start_time > #{startTime}]]>
+            </if>	
+
+			<if test="startTime = null  and endTime != null ">
+                <![CDATA[ AND end_time < #{endTime} ]]>
+            </if>
+         </where>
+	</select>
+	
+	<select id="getLastInstructionsCode" parameterType="String" resultType="String">
+		<![CDATA[
+		select max(code)
+		from instructions
+		where code like concat (#{searchIsCode}, '%')
+		]]>
+	</select>
+	
+	<select id="selectByType" resultMap="instructionsDTOMap">
+		select *
+		from instructions
+		where state = #{type}
+	</select>
+	
+	<select id="selectByStateAndDueTime" resultMap="instructionsDTOMap">
+		select *
+		from instructions iss 
+<!-- 		join sales_order_product sop 
+		on iss.sop_code = sop.sales_code  -->
+		where state = #{state} and due_date between #{startDate} and #{endDate} 
+	</select>
+	
+	<!-- 품목별 소요량 확인하기 -->
+	<select id="selectByisCodeForMaterialsWithRequested" resultMap="requestMaterialsDTOMap">
+		<![CDATA[
+		select *		
+		from meta_data_product mdp
+		join meta_data_required_amount mdra 
+		on mdra.product_code = mdp.product_code 
+		where mdp.product_code = (select mdp_code from instructions where sop_code = #{sopCode} and state = 'REQUESTED')
+		]]>
+	</select>
+	
+	<!-- SOP 정보로 찾기 -->
+	<select id="selectBySopCode" resultMap="instructionsDTOMap" parameterType="java.util.Map">
+		select *
+		from instructions iss 
+<!-- 		join sales_order_product sop 
+		on iss.sop_code = sop.sales_code  -->
+		where sop_code = #{sopCode} and state = #{state}
+	</select>
+	
+	<select id="selectByState" resultMap="instructionsDTOMap">
+		select *
+		from instructions iss 
+<!-- 		join sales_order_product sop 
+		on iss.sop_code = sop.sales_code  -->
+		where state = #{state} 
+	</select>
+	
+	<!-- 수주 상태 업데이트 -->
+	<update id="updateSaleOrderProduct">
+		update sales_order_product 
+		set product_status = #{status}
+		where sales_code = (select sop_code from instructions where code = #{isCode})
+	</update>
+	
+	<!-- 자재팀에게 원자재 요청 -->
+	<insert id="insertOutWarehouseForMaterials">
+		insert into out_warehouse 
+		(based_code, product_code, out_type, quantity, status)
+		values(#{orderCode}, #{productCode} ,'P' ,#{outQuantity} ,'waiting')
+	</insert>
+
+	<!-- 자재 전달 상황 조회 -->
+	<select id="selectOutWarehouseForMaterials" resultType="com.mes2.materials.domain.OutDTO" parameterType="java.util.Map" >
+		select * 
+		from out_warehouse 
+		where based_code = #{baseCode} and out_type = 'p' and product_code = #{productCode}
+	</select>
+	
+	<!-- 자재 전달 상황 조회 리턴값 리스트 -->
+	<select id="selectOutWarehouseForMaterialsList" resultType="com.mes2.materials.domain.OutDTO" parameterType="java.util.Map" >
+		select * 
+		from out_warehouse 
+		where based_code = #{baseCode} and out_type = 'p'
+	</select>
+</mapper>

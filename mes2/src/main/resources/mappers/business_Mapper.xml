@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace="com.mes2.mapper.business_Mapper">
+  
+	
+  	<insert id="insert" parameterType="com.mes2.metadata.domain.md_businessDTO">
+  INSERT INTO meta_data_business (company_code, category, pw, name, manager, address, `call`, fax, email, auth)
+  VALUES (#{company_code}, #{category}, #{pw}, #{name}, #{manager}, #{address}, #{call}, #{fax}, #{email},
+  <choose>
+    <when test="category == '고객사'">
+      'ROLE_CLIENT'
+    </when>
+    <otherwise>
+      ''
+    </otherwise>
+  </choose>)
+	</insert>
+  	
+  	<!--  공통코드 가져오는 부분 -->
+  	<select id="common" resultType="String">
+	  	select code_code
+	  	from common_code
+	  	where code_name = #{category}
+	</select>
+	
+	<!-- 숫자가 제일 큰 품목코드 -->
+	<select id="number" resultType="String">
+		SELECT MAX(company_code)
+		FROM meta_data_business
+		where company_code LIKE concat(#{commoncode}, '%')	
+	</select>
+  	
+  	
+  	<update id="update" parameterType="com.mes2.metadata.domain.md_businessDTO">
+  	
+  	UPDATE meta_data_business
+    SET
+    	pw = #{pw},
+        name = #{name},
+        manager = #{manager},
+        address = #{address},
+        `call` = #{call},
+        fax = #{fax},
+        email = #{email},
+        contract_status = #{contract_status}      
+    WHERE
+        company_code = #{company_code}
+  	</update>
+  	
+  	
+  	<delete id="delete" parameterType="com.mes2.metadata.domain.md_businessDTO">
+	  	delete from meta_data_business
+	  	where company_code = #{company_code} 	
+  	</delete>
+  	
+  	<!-- 글 갯수 세기 -->
+  	<select id="count" resultType="int">
+  		select count(*) from meta_data_business
+  		<where>  		  		
+	  		<if test="search !=null and !search.equals('')">
+	  		and name like '%${search }%'
+	  		</if>
+  		</where> 	
+  	</select>
+  	
+  	<!-- 리스트 가져가기 -->
+  	<select id="list" resultType="com.mes2.metadata.domain.md_businessDTO">
+  		
+  		select * from meta_data_business
+  		
+  		<where>  			  		
+	  		<if test="search !=null and !search.equals('')">
+	  		and name like '%${search }%'
+	  		</if>
+  		</where>
+  		order by contract_status desc
+  		<if test="cri != null">
+  		limit #{cri.startPage},#{cri.pageSize} 	
+  		</if>
+  		
+  	</select>
+  		
+	
+  </mapper>
+  

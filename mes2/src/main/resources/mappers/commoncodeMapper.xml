@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  
+  
+	<mapper namespace="com.mes2.mapper.CommoncodeMapper">
+			
+			
+		<!-- 공통코드 리스트 출력 -->
+		<select id="getCommoncodeList" resultType="com.mes2.system.domain.CommonCodeDTO">
+			select*from common_code order by code_index asc
+		</select>
+	
+		
+		<!-- 공통코드 조회  -->
+		<select id ="getCommoncode" resultType="com.mes2.system.domain.CommonCodeDTO">
+			select * from common_code
+			where code_index=#{code_index}
+		</select>
+		
+		
+		
+		<!-- 공통코드 등록 -->
+		<insert id ="insertCommoncode">
+			insert into common_code(code_group,code_group_name,code_code,code_name,code_usestatus)
+			values(#{code_group},#{code_group_name},#{code_code},#{code_name},1)
+		</insert>
+		
+		
+		
+		
+		
+		
+		
+		<!-- 공통코드 수정 -->
+		<update id="updateCommonCode">
+		 	update common_code set code_group=#{code_group},code_group_name=#{code_group_name},code_code=#{code_code},code_name=#{code_name},code_updatedate=now()
+			where code_index=#{code_index}
+		</update>
+		
+		
+		
+		
+		<!--  공통코드 삭제 -->
+		<delete id="deleteCommonCode">
+			delete from common_code
+			where code_group=#{code_group} and code_code=#{code_code}
+		</delete>
+		
+	
+		<!-- 공통코드 검색 -->
+		<select id="searchCode" resultType="com.mes2.system.domain.CommonCodeDTO">
+			select * from common_code 
+		 <where>
+		 	  <if test="searchOption == 'option1'">
+            	 and code_group like concat('%', #{searchWord}, '%')
+       		  </if>
+        	  <if test="searchOption == 'option2'">
+                 and code_code like concat('%', #{searchWord}, '%')
+        	  </if>
+		 </where>
+	   </select>
+	
+	
+	
+	
+	 
+		 <!-- 페이징처리 메퍼1 --> 
+		 <select id="listCommonCode" resultType="com.mes2.system.domain.CommonCodeDTO">
+		 	select * from common_code
+		 	limit #{startPage},#{pageSize}
+		 </select>
+		  
+		  
+		  
+		<!-- 전체 인원수 조회 (페이징2) -->
+		<select id = "countCommonCode" resultType="int">
+			<![CDATA[ select count(*) from common_code where code_index > 0 ]]>
+		</select>
+  
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	</mapper>

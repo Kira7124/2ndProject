@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+
+<mapper namespace="com.mes2.mapper.MaterialsMapper">
+
+	<resultMap id="InDTO" type="com.mes2.materials.domain.InDTO">
+		<result property="in_code" column="in_code" />
+		<result property="in_regdate" column="in_regdate" />
+		<result property="product_code" column="product_code" />
+		<result property="quantity" column="quantity" />
+		<result property="unit" column="unit" />
+		<result property="pd_lot" column="pd_lot" />
+		<result property="category" column="category" />
+		<result property="name" column="name" />
+		<result property="cost" column="cost" />
+		<result property="user_id" column="user_id" />
+	</resultMap>
+
+
+	<resultMap type="com.mes2.materials.domain.PageVO"
+		id="PageVO">
+		<result property="totalCount" column="totalCount" />
+		<result property="startPage" column="startPage" />
+		<result property="endPage" column="endPage" />
+		<result property="prev" column="prev" />
+		<result property="next" column="next" />
+		<result property="displayPageNum" column="displayPageNum" />
+	</resultMap>
+
+	<resultMap type="com.mes2.materials.domain.Criteria"
+		id="Criteria">
+		<result property="page" column="page" />
+		<result property="pageSize" column="pageSize" />
+	</resultMap>
+
+	<resultMap type="com.mes2.materials.domain.SearchDTO"
+		id="Search">
+		<result property="category" column="category" />
+		<result property="name" column="name" />
+		<result property="searchType" column="searchType" />
+		<result property="keyword" column="keyword" />
+	</resultMap>
+
+	<insert id="insertMaterialOrderWithCode">
+		INSERT into material_order (orders_code,
+		product_code,
+		quantity) values
+		(#{orders_code},#{product_code},#{quantity})
+	</insert>
+
+	<insert id="insertMaterialReceipt" parameterType="java.util.Map">
+		INSERT into
+		in_warehouse (product_code, quantity, pd_lot)
+		values(#{product_code},#{quantity}, #{pd_lot})
+	</insert>
+
+	<select id="getProductByCategory"
+		resultType="com.mes2.materials.domain.productDTO"
+		parameterType="java.util.Map">
+		SELECT * from meta_data_product where product_code
+		=#{product_code}
+	</select>
+
+	<select id="selectMaterialCategoryList"
+		resultType="com.mes2.materials.domain.productDTO"
+		parameterType="java.util.Map">
+		SELECT * from meta_data_product where category
+		=#{category}
+	</select>
+
+	<select id="combinedMaterialList"
+		resultType="com.mes2.materials.domain.PurchaseDTO"
+		parameterType="java.util.Map">
+		SELECT mo.orders_index, mo.orders_code, mo.product_code, mdp.name,
+		mdp.cost, mdp.price,
+		mdp.category, mo.quantity, mo.regdate, mo.status
+		FROM material_order mo
+		LEFT OUTER JOIN meta_data_product mdp
+		ON mdp.product_code = mo.product_code
+		<where>
+			<if
+				test="searchType != null and searchType.equals('name') and keyword != null and !keyword.equals('')">
+				AND name LIKE concat('%' , #{keyword}, '%')
+			</if>
+			<if
+				test="searchType != null and searchType.equals('category') and keyword != null and !keyword.equals('')">
+				AND category LIKE concat('%' , #{keyword}, '%')
+			</if>
+		</where>
+
+		ORDER BY orders_index DESC
+		<if test="startPage != null and pageSize != null ">
+			LIMIT #{startPage}, #{pageSize}
+		</if>
+	</select>
+
+	<select id="combinedMaterialListCount" resultType="integer"
+		parameterType="java.util.Map">
+		SELECT count(*) FROM material_order mo
+		LEFT OUTER JOIN
+		meta_data_product mdp ON mdp.product_code =
+		mo.product_code
+		<where>
+			<if
+				test="searchType != null and searchType.equals('name') and keyword != null and !keyword.equals('')">
+				AND name LIKE concat('%' , #{keyword}, '%')
+			</if>
+			<if
+				test="searchType != null and searchType.equals('category') and keyword != null and !keyword.equals('')">
+				AND category LIKE concat('%' , #{keyword}, '%')
+			</if>
+		</where>
+		ORDER BY orders_index DESC
+	</select>
+
+	<update id="updateOrderStatus" parameterType="java.util.Map">
+		UPDATE
+		material_order SET status=#{status} WHERE orders_index=#{orders_index}
+	</update>
+
+
+	<select id="getStatus" parameterType="String"
+		resultType="com.mes2.materials.domain.PurchaseDTO">
+		SELECT status FROM material_order WHERE
+		product_code=#{product_code} AND product_code=#{product_code}
+	</select>
+
+	<select id="getAllPurchaseData" resultType="com.mes2.materials.domain.PurchaseDTO">
+		SELECT mo.orders_index, mo.orders_code, mo.product_code, mdp.name,
+		mdp.cost, mdp.price,
+		mdp.category, mo.quantity, mo.regdate, mo.status
+		FROM material_order mo
+		LEFT OUTER JOIN meta_data_product mdp
+		ON mdp.product_code = mo.product_code
+	</select>
+
+	<select id="getInList"
+		resultType="com.mes2.materials.domain.InDTO"
+		parameterType="java.util.Map">
+		select iw.in_code, mdp.name, mdp.product_code, mdp.cost,
+		mdp.category,
+		iw.pd_lot, iw.quantity, mdp.unit, in_regdate, iw.status
+		from
+		in_warehouse iw join meta_data_product mdp on
+		mdp.product_code =
+		iw.product_code
+		<where>
+			<if
+				test="searchType != null and searchType.equals('name') and keyword != null and !keyword.equals('')">
+				AND name LIKE concat('%' , #{keyword}, '%')
+			</if>
+			<if
+				test="searchType != null and searchType.equals('category') and keyword != null and !keyword.equals('')">
+				AND category LIKE concat('%' , #{keyword}, '%')
+			</if>
+			AND iw.status = 'waiting' or iw.status = 'requested'
+		</where>
+		ORDER BY in_index DESC
+		<if test="startPage != null and pageSize != null ">
+			LIMIT #{startPage}, #{pageSize}
+		</if>
+	</select>
+
+	<select id="InCount" resultType="integer"
+		parameterType="java.util.Map">
+		select count(*) from in_warehouse iw join meta_data_product mdp on
+		mdp.product_code = iw.product_code
+		<where>
+			<if
+				test="searchType != null and searchType.equals('name') and keyword != null and !keyword.equals('')">
+				AND name LIKE concat('%' , #{keyword}, '%')
+			</if>
+			<if
+				test="searchType != null and searchType.equals('category') and keyword != null and !keyword.equals('')">
+				AND category LIKE concat('%' , #{keyword}, '%')
+			</if>
+			AND iw.status = 'waiting' or iw.status = 'requested'
+		</where>
+			ORDER BY in_index DESC
+		<if test="startPage != null and pageSize != null ">
+			LIMIT #{startPage}, #{pageSize}
+		</if>
+	</select>
+
+	<select id="listIncomingProductCodes"
+		resultType="com.mes2.materials.domain.InDTO"
+		parameterType="java.util.Map">
+		SELECT * from in_warehouse where pd_lot =#{pd_lot}
+	</select>
+
+	<insert id="insertIncomingLotNumber">
+		INSERT INTO stock (product_code, pd_lot, category)
+		values (#{product_code}, #{pd_lot}, #{category})
+	</insert>
+
+	<update id="updateStock">
+		UPDATE stock
+		<set>
+			<if test="product_code != null">
+				product_code = #{product_code},
+			</if>
+			pd_lot = #{pd_lot}, category = #{category}
+		</set>
+		WHERE product_code = #{product_code}
+	</update>
+
+	<insert id="insertStock" parameterType="java.util.Map">
+		INSERT INTO stock
+		(quantity, category, product_code, warehouse_code, pd_lot) 
+		values 
+		(#{quantity},
+		(SELECT category FROM meta_data_product where product_code =#{product_code})
+		, #{product_code}, (
+		SELECT warehouse_code
+		FROM meta_data_warehouse
+		WHERE category = (SELECT category FROM meta_data_product where product_code =#{product_code})) ,#{pd_lot})
+	</insert>
+
+	<update id="updateStockOnIncoming" parameterType="java.util.Map">
+		UPDATE stock
+		SET quantity = quantity + #{quantity} WHERE
+		product_code=#{product_code}
+	</update>
+
+	<select id="selectStock"
+		resultType="com.mes2.materials.domain.InDTO"
+		parameterType="java.util.Map">
+		select * from stock where product_code =#{product_code}
+	</select>
+
+	<update id="updateInStatus" parameterType="java.util.Map">
+		UPDATE in_warehouse
+		SET status=#{status} WHERE in_index=#{in_index}
+	</update>
+	
+	<select id="getInventoryIndex" parameterType="java.util.Map"> 
+		SELECT * from in_warehouse where in_index =#{in_index}
+	</select>
+
+	<update id="updateIncomingRequest" parameterType="java.util.Map">
+		UPDATE
+		in_warehouse
+		SET in_code = #{in_code}, status='complete'
+		where pd_lot =#{pd_lot}
+	</update>
+
+	<select id="selectMaxMaterialsLot" resultType="String">
+      <![CDATA[
+      select max(pd_lot)
+      from in_warehouse
+      where pd_lot like concat (#{value}, '%')
+      ]]>
+	</select>
+
+	<select id="InDetailCompletedWarehouse"
+		resultType="com.mes2.materials.domain.InDTO"
+		parameterType="java.util.Map">
+		select iw.in_code, mdp.name, mdp.product_code, mdp.cost,
+		mdp.category,
+		iw.pd_lot, iw.quantity, mdp.unit, in_regdate, iw.status
+		from in_warehouse iw
+		join meta_data_product mdp
+		on mdp.product_code = iw.product_code
+		where status = 'complete'
+		<if test="keyword!=null and !keyword.equals('')">
+			AND pd_lot LIKE concat('%' , #{keyword}, '%')
+		</if>
+		ORDER BY in_index DESC
+		<if test="startPage != null and pageSize != null ">
+			LIMIT #{startPage}, #{pageSize}
+		</if>
+	</select>
+
+	<select id="inDetailCount" resultType="integer"
+		parameterType="java.util.Map">
+		select count(*) from in_warehouse where status = 'complete'
+		<if test="keyword!=null and !keyword.equals('')">
+			AND pd_lot LIKE concat('%' , #{keyword}, '%')
+		</if>
+		ORDER BY in_index DESC
+		<if test="startPage != null and pageSize != null ">
+			LIMIT #{startPage}, #{pageSize}
+		</if>
+	</select>
+	
+	<select id="getAllInData"
+		resultType="com.mes2.materials.domain.InDTO">
+		select iw.in_code, mdp.name, mdp.product_code, mdp.cost,
+		mdp.category,
+		iw.pd_lot, iw.quantity, mdp.unit, in_regdate, iw.status
+		from
+		in_warehouse iw
+		join meta_data_product mdp
+		on mdp.product_code =
+		iw.product_code
+		where status = 'complete'
+	</select>
+	
+	<select id="warehouseCodeCategory" resultType="com.mes2.materials.domain.WarehouseDTO" parameterType="String"> 
+		select * from meta_data_warehouse where category =#{category}
+	</select>
+</mapper>

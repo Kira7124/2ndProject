@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  
+<mapper namespace="com.mes2.mapper.BoardMapper">
+	
+	<!-- 글 작성 -->
+	<insert id ="insertBoard">
+		insert into board (title,content,writer) values(#{title},#{content},#{writer})
+	</insert>
+
+
+
+	<!-- 모든 글 목록 -->
+	<select id ="listAll" resultType="com.mes2.system.domain.BoardDTO">
+		select * from board
+	</select>
+
+
+
+	<!-- 특정 글 번호 조회 -->
+	<select id = "getBoardNum" resultType="com.mes2.system.domain.BoardDTO">
+		select * from board where bno=#{bno}
+	</select>
+
+
+
+	<!-- 특정 글 수정 -->
+	<update id = "updateBoard">
+		update board set title=#{title},content=#{content} where bno=#{bno}
+	</update>
+
+
+
+	<!-- 글 정보 삭제 -->
+	<delete id ="deleteBoard">
+		delete from board where bno=#{bno}
+	</delete>
+
+
+
+
+	<!-- 글 조회수 1 증가 -->
+	<update id ="updateReadCnt">
+		update board set read_count = read_count + 1 where bno = #{bno} 
+	</update>
+
+
+	
+
+ <!-- 글검색기능 -->
+  <select id="searchBoard" resultType="com.mes2.system.domain.BoardDTO">
+    select * from board
+    <where>
+        <if test="searchOption == 'option1'">
+            and writer like concat('%', #{searchWord}, '%')
+        </if>
+        <if test="searchOption == 'option2'">
+            and title like concat('%', #{searchWord}, '%')
+        </if>
+    </where>
+</select>
+	
+
+ <!-- 페이징처리 메퍼1 --> 
+ <select id="listBoard" resultType="com.mes2.system.domain.BoardDTO">
+ 	select * from board
+ 	limit #{startPage},#{pageSize}
+ </select>
+  
+  
+  
+<!-- 전체 글갯수 조회 (페이징2) -->
+<select id = "countBoard" resultType="int">
+	<![CDATA[ select count(*) from board where bno > 0 ]]>
+</select>
+  
+
+
+
+
+
+</mapper>  

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <!-- produceMapper.xml -->
+  
+<mapper namespace="com.mes2.mapper.EtcMapper">
+
+	<select id="getTime" resultType="java.sql.Date">
+		select now()
+	</select>
+	
+	<insert id="insertRawLot">
+		insert into (rm_lot) 
+		values (#{value}) 
+	</insert>
+	
+	<select id="selectMaxMaterialsLot" resultType="String">
+		<![CDATA[
+		select max(rm_lot)
+		from rm_test
+		where rm_lot like concat (#{value}, '%')
+		]]>
+	</select>
+
+	
+
+	
+	
+</mapper>

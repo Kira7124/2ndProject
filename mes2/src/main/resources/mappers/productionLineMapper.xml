@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <!-- productionLineMapper.xml -->
+  
+<mapper namespace="com.mes2.mapper.ProductionLine">
+
+	<resultMap type="com.mes2.production.domain.ProductionLineDTO" id="productionLineDTOMap">
+		<result property="index" column="index"/>
+		<result property="line" column="line"/>
+		<result property="isCode" column="is_code"/>
+		<result property="startDate" column="start_date"/>
+		<result property="endDate" column="end_date"/>
+		<result property="status" column="status"/>
+	</resultMap>
+	
+	
+	
+	<insert id="insertProductionLine">
+		insert into production_line (line, is_code, start_date, end_date, status) 
+		values (#{line}, #{isCode}, #{startDate}, #{endDate}, #{status})
+	</insert>
+<!-- 	
+	<select id="selectByDateForList" parameterType="java.util.Map">
+		SELECT * 
+		FROM production_line
+		WHERE start_date BETWEEN #{startDate} AND #{endDate} or end_date BETWEEN #{startDate} and #{endDate} 
+	</select>
+	 -->
+	
+	<select id="selectByDateForTotalCount" resultType="int">
+		SELECT count(*) 
+		FROM production_line
+		WHERE start_date BETWEEN #{startDate} AND #{endDate}
+		<if test="status!=null and status.equals('WAITING')">
+			and status = 'WAITING'
+		</if>
+		<if test="status!=null and status.equals('PROGRESSING')">
+			and status = 'PROGRESSING'
+		</if>
+		<if test="status!=null and status.equals('COMPLETE')">
+			and status = 'COMPLETE'
+		</if>
+		<if test="isCode!=null and !isCode.equals('')">
+			and is_code like concat('%', #{isCode}, '%')
+		</if>
+	</select>
+	
+	<select id="selectByDateForList" resultMap="productionLineDTOMap">
+		SELECT * 
+		FROM production_line
+		WHERE start_date BETWEEN #{startDate} AND #{endDate} 
+		<if test="status!=null and status.equals('WAITING')">
+			and status = 'WAITING'
+		</if>
+		<if test="status!=null and status.equals('PROGRESSING')">
+			and status = 'PROGRESSING'
+		</if>
+		<if test="status!=null and status.equals('COMPLETE')">
+			and status = 'COMPLETE'
+		</if>
+		<if test="isCode!=null and !isCode.equals('')">
+			and is_code like concat('%', #{isCode}, '%')
+		</if>
+		ORDER BY start_date desc
+		LIMIT #{startPage}, #{pageSize}
+	</select>
+	
+	<update id="updateState">
+		update production_line
+		set status = #{status}
+		where is_code = #{isCode}
+	</update>
+	
+	<update id="updateComplete">
+		update production_line
+		set end_date = now() , status = 'COMPLETE'
+		where is_code =#{isCode} 
+	</update>
+	
+	<select id="selectByIsCode" resultMap="productionLineDTOMap" parameterType="String">
+		select *
+		from production_line pl 
+		join instructions iss
+		on pl.is_code = iss.code  
+		where pl.is_code = #{value}
+	</select>
+	
+	<select id ="selectByDateForLot" resultMap="productionLineDTOMap" parameterType="String">
+		<![CDATA[
+		select *
+		from production_line pl
+		join instructions is
+		on pl.is_code = is.code
+		where like concat(#{value}+'%')
+		]]>
+	</select>
+	
+	<select id="selectByDateForProduce" resultMap="productionLineDTOMap" parameterType="java.util.Map">
+		<![CDATA[
+		SELECT * 
+		FROM production_line
+		WHERE start_date <= DATE_ADD(#{startDate}, INTERVAL 1 DAY) AND end_date >= #{startDate} 
+		]]>
+	</select>
+	
+</mapper>

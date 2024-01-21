@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <!-- produceMapper.xml -->
+  
+<mapper namespace="com.mes2.mapper.ProductMapper">
+
+	<select id="getTime" resultType="java.sql.Date">
+		select now()
+	</select>
+	
+	<insert id="insertProduct">
+		insert into product (pd_lot,pd_mdp_code, pd_quantity, pd_period, pd_date, pd_soi_id, pd_qc_result, pd_count, pd_is_code)
+		value(#{pd_lot},#{pd_mdp_code},#{pd_quantity},#{pd_period},#{pd_date},#{pd_soi_id},#{pd_qc_result},#{pd_count}, #{pd_is_code})
+	</insert>
+
+	<select id="selectByLot" resultType="com.mes2.production.domain.ProductDTO">
+		select * from product
+		where pd_lot = #{pd_lot}
+	</select>
+	
+	<!-- 총 개수 구하기 -->
+	<select id="selectBySearchForTotal" resultType="int" >
+        select count(*) from product
+		
+		<where>
+            <if test="name !=null and !name.equals('')">
+                and pd_mdp_code like concat('%',#{name},'%')
+            </if>
+           
+            <if test="startDate != null  and endDate != null ">
+                AND pd_date BETWEEN #{startDate} AND #{endDate}
+            </if>	
+          <!--  
+            <if test="!startDate.equals('')  and !endDate.equals('') ">
+                AND pd_date BETWEEN #{startDate} AND #{endDate}
+            </if>	
+             -->
+         </where>
+	</select>
+	
+	
+	<!-- 서치 검색 (페이징) -->
+	<select id="selectBySearch" resultType="com.mes2.production.domain.ProductDTO" >
+        select * from product
+		
+		<where>
+            <if test="name !=null and !name.equals('')">
+                and pd_mdp_code like concat('%',#{name},'%')
+            </if>
+           
+            <if test="startDate != null  and endDate != null ">
+                AND pd_date BETWEEN #{startDate} AND #{endDate}
+            </if>	
+          <!--  
+            <if test="!startDate.equals('')  and !endDate.equals('') ">
+                AND pd_date BETWEEN #{startDate} AND #{endDate}
+            </if>	
+             -->
+         </where>
+         ORDER BY pd_lot desc
+		 LIMIT #{startPage}, #{pageSize}
+	</select>
+	
+	<delete id="deleteProduct" parameterType="java.util.List">
+		delete from product
+		<where>
+			<foreach collection="list" item="lot" separator=",">
+				pd_lot = #{lot}
+			</foreach>
+		</where>
+	</delete>
+	
+	<select id="getLastLot" parameterType="String" resultType="String">
+		<![CDATA[
+		select max(pd_lot)
+		from product
+		where pd_lot like concat (#{searchLot}, '%')
+		]]>
+	</select>
+	
+	<insert id="insertInWarehouse">
+		insert into in_warehouse
+		(product_code, pd_lot, quantity, status)
+		values 
+		(#{pd_mdp_code}, #{pd_lot}, #{pd_quantity}, 'requested') 
+	</insert>
+	
+	
+</mapper>

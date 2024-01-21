@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace="com.mes2.mapper.shippingMapper">
+  
+   <resultMap id="ShippingDTO" type="com.mes2.sales.domain.ShippingDTO">
+  	<result property="order_code" column="order_code"/>
+  	<result property="company_name" column="company_name"/> 
+  	<result property="product_name" column="name"/>
+  	<result property="order_date" column="order_date"/>
+  	<result property="request_date" column="request_date"/> 
+  	<result property="product_code" column="product_code"/>
+  	<result property="sales_quantity" column="sales_quantity"/>
+  	<result property="sales_code" column="sales_code"/>
+  	<result property="product_status" column="product_status"/>
+  	<result property="processing_reg" column="processing_reg"/>
+  	<result property="ship_status" column="ship_status"/>
+  	<result property="ship_code" column="ship_code"/>
+  	<result property="ship_date" column="ship_date"/>
+  	<result property="scheduled_date" column="scheduled_date"/>
+  	<result property="planCnt" column="planCnt"/>
+  	<result property="waitingCnt" column="waitingCnt"/>
+  	<result property="instructionCnt" column="instructionCnt"/>
+  	<result property="progress_status" column="progress_status"/>
+  </resultMap>
+  
+  <resultMap id="AcceptSaveDTO" type="com.mes2.sales.domain.AcceptSaveDTO">
+  	<result property="order_code" column="order_code"/>
+  	<result property="company_name" column="name"/> 
+  	<result property="company_code" column="company_code"/> 
+  	<result property="company_address" column="address"/> 
+  	<result property="company_call" column="call"/>
+  	<result property="request_date" column="request_date"/> 
+  	<result property="user_id" column="user_id"/> 
+  	<result property="user_name" column="user_name"/>
+  	<result property="user_department" column="user_department"/>
+  	<result property="user_position" column="user_position"/>
+  	<result property="user_auth" column="user_auth"/>
+  </resultMap>
+  
+   <sql id="shippingJoin">
+  from sales_order_info I  
+  left join meta_data_business B  
+  on I.company_code = B.company_code 
+  join shipping S 
+  on S.order_code = I.order_code 
+  join sales_order_product P 
+  on P.order_code = I.order_code 
+  left join meta_data_product M 
+  on M.product_code = P.product_code 
+  </sql>
+  
+  <sql id="shippingGroup">
+  group by I.order_code, B.name, I.order_date, I.request_date, S.ship_status, S.scheduled_date
+  </sql>
+  
+  <sql id="instructionGroup">
+  group by S.ship_code, S.order_code, S.ship_date, S.progress_status, I.order_date, B.name
+  </sql>
+  
+   <sql id="searchDate">
+    <choose>
+        <when test="startDay != null and endDay != null">
+            and S.scheduled_date BETWEEN DATE_FORMAT(#{startDay}, '%Y-%m-%d 00:00:00') AND DATE_FORMAT(#{endDay}, '%Y-%m-%d 23:59:59')  
+        </when>
+        <when test="startDay != null and endDay == null">
+           AND S.scheduled_date BETWEEN DATE_FORMAT(#{startDay}, '%Y-%m-%d 00:00:00') AND DATE_FORMAT(#{startDay}, '%Y-%m-%d 23:59:59')  
+        </when>
+        <when test="startDay == null and endDay != null">
+            and S.scheduled_date BETWEEN DATE(NOW()) AND DATE_FORMAT(#{endDay}, '%Y-%m-%d 23:59:59')  
+        </when>  
+    </choose>
+  </sql>
+  
+   <sql id="orderSearchDate">
+    <choose>
+        <when test="startDay != null and endDay != null">
+            and I.order_date BETWEEN DATE_FORMAT(#{startDay}, '%Y-%m-%d 00:00:00') AND DATE_FORMAT(#{endDay}, '%Y-%m-%d 23:59:59')  
+        </when>
+        <when test="startDay != null and endDay == null">
+           AND I.order_date BETWEEN DATE_FORMAT(#{startDay}, '%Y-%m-%d 00:00:00') AND DATE_FORMAT(#{startDay}, '%Y-%m-%d 23:59:59')  
+        </when>
+        <when test="startDay == null and endDay != null">
+            and I.order_date BETWEEN DATE(NOW()) AND DATE_FORMAT(#{endDay}, '%Y-%m-%d 23:59:59')  
+        </when>  
+    </choose>
+  </sql>
+  
+     <sql id="shipSearchDate">
+    <choose>
+        <when test="startDay != null and endDay != null">
+            and S.ship_date BETWEEN DATE_FORMAT(#{startDay}, '%Y-%m-%d 00:00:00') AND DATE_FORMAT(#{endDay}, '%Y-%m-%d 23:59:59')  
+        </when>
+        <when test="startDay != null and endDay == null">
+           AND S.ship_date BETWEEN DATE_FORMAT(#{startDay}, '%Y-%m-%d 00:00:00') AND DATE_FORMAT(#{startDay}, '%Y-%m-%d 23:59:59')  
+        </when>
+        <when test="startDay == null and endDay != null">
+            and S.ship_date BETWEEN DATE(NOW()) AND DATE_FORMAT(#{endDay}, '%Y-%m-%d 23:59:59')  
+        </when>  
+    </choose>
+  </sql>
+  
+
+
+	
+
+   <sql id="searchList">
+   
+	<if test="type == 'order_code'">
+	    and I.order_code like concat('%',#{search},'%')
+	    <include refid="searchDate"/>
+	</if>	
+  	<if test="type == 'company_name'">
+  	and B.name like concat('%',#{search},'%') 
+  	<include refid="searchDate"/> 
+  	</if> 
+  	 	
+  	<if test="type == 'order_date'">
+  	<include refid="orderSearchDate"/> 
+  	</if> 
+  		
+  	<if test="type == 'scheduled_date'">
+  	<include refid="searchDate"/>
+  	</if>	 
+  		
+  	<if test="type == 'ship_code'">
+  	and S.ship_code like concat('%',#{search},'%') 
+  	 <include refid="searchDate"/> 
+  	</if>
+  	
+  	<if test="type == 'ship_date'">
+  	<include refid="shipSearchDate"/>
+  	</if>	
+ 
+  	<if test="shipStatus != null and shipStatus != ''">
+  	and S.ship_status =#{shipStatus} 
+  	</if>
+  	
+  	<if test="shipSta != null and shipSta != ''">
+  	and S.ship_status =#{shipSta} 
+  	</if>
+  	
+  	<if test="userId != null and userId != ''">
+		and I.user_id =#{userId}
+	</if>
+	
+
+	  <if test="type == 'user_id'">
+	  	and I.user_id like concat('%',#{search},'%') 
+	  	 <include refid="searchDate"/> 
+	</if>
+	
+	<if test="progressStatus != null and progressStatus != ''">
+		and S.progress_status = #{progressStatus} 
+	</if>
+	<if test="progressSta != null and progressSta != ''">
+		and S.progress_status = #{progressSta} 
+	</if>
+
+	
+  </sql>
+  
+  
+  <sql id="statusList">
+    <if test="shipStatus != null and shipStatus != ''">
+  	and S.ship_status =#{shipStatus} 
+  	</if>
+  	<if test="userId != null and userId != ''">
+		and I.user_id =#{userId}
+	</if>
+  </sql>
+  
+  <select id="getShippingList" resultMap="ShippingDTO">
+  select I.order_code , B.name AS company_name ,I.order_date, I.request_date, S.ship_status, S.scheduled_date
+  <include refid="shippingJoin"/>
+  where  
+  I.sales_status = 'accept' 
+  and S.ship_code IS NULL 
+  <include refid="searchList"/> 
+  <include refid="shippingGroup"/>
+   order by I.request_date ASC 
+   LIMIT #{pageStart}, #{perPageNum} 
+  </select>
+  
+  <select id="totalCount" resultMap="ShippingDTO">
+  select I.order_code , B.name AS company_name ,I.order_date, I.request_date, S.ship_status, S.scheduled_date
+  <include refid="shippingJoin"/>
+  where  
+  I.sales_status = 'accept' 
+  and S.ship_code IS NULL 
+  <include refid="searchList"/> 
+  <include refid="shippingGroup"/>
+   order by I.request_date ASC  
+  </select>
+  
+  
+  <select id="productStatusCnt" resultType="String">
+  select product_status from sales_order_product 
+  where order_code =#{order_code} 
+  </select>
+  
+  <update id="updateShipStatus">
+  update shipping 
+  set ship_status = #{ship_status} 
+  where order_code = #{order_code}
+  </update>
+  
+  <select id="getPlanContent" resultMap="ShippingDTO">
+  select P.sales_code, M.name, P.sales_quantity, P.product_status, P.processing_reg  
+  <include refid="shippingJoin"/> 
+  where P.order_code = #{order_code} 
+  </select>
+  
+  
+
+  
+  <select id="getId" resultMap="ShippingDTO">
+  select I.user_id, E.user_name from sales_order_info I 
+  join employees E on I.user_id = E.user_id 
+  where I.order_code = #{order_code}
+  </select>
+  
+  <select id="checkUpdatePw" resultType="String">
+  select user_pw from employees where user_id = #{user_id} 
+  </select>
+  
+  <select id="getScheduleDate" resultType="String">
+  select order_code from shipping where scheduled_date = #{scheduled_date}
+  </select>
+  
+  <update id="updateSchedule">
+  update shipping 
+  set scheduled_date = #{scheduled_date} 
+  where order_code = #{order_code} 
+  </update>
+  
+  <select id="checkOrderDate" resultMap="ShippingDTO">
+  select I.order_date, I.request_date, S.scheduled_date , S.ship_date 
+  from sales_order_info I 
+  join shipping S on I.order_code = S.order_code 
+  where I.order_code = #{order_code}
+  </select>
+  
+  <select id="getOrderInfo" resultMap="AcceptSaveDTO">
+  select I.request_date, E.user_id, E.user_name, E.user_department, E.user_position, E.user_auth, 
+  B.company_code, B.name, B.address, B.call 
+  from employees E 
+  join sales_order_info I on E.user_id = I.user_id 
+  join meta_data_business B on B.company_code = I.company_code 
+  where I.order_code = #{order_code} 
+  </select>
+  
+  <select id="countShipStatus" resultType="Integer">
+  select count(ship_status) from shipping
+  where ship_status = #{ship_status} and ship_code is null 
+  </select>
+
+ 
+  
+  <update id="updateShipDate">
+  update shipping 
+  set ship_date = #{scheduled_date}   
+  where order_code = #{order_code} 
+  </update>
+  
+  <update id="makeShipCode">
+  update shipping 
+  set ship_code =  concat_ws('-',(select code_group from common_code where code_group_name='출하'),order_code), 
+  instruction_date = now(), 
+  progress_status = 'waiting' 
+  where order_code = #{order_code} 
+  </update>
+  
+  <select id="getShipDate" resultMap="ShippingDTO">
+  select scheduled_date from shipping where order_code=#{order_code} 
+  </select>
+  
+    <select id="instructionList" resultMap="ShippingDTO">
+  select S.ship_code, S.order_code, S.ship_date, S.progress_status, I.order_date, B.name as company_name  
+  <include refid="shippingJoin"/>
+  where S.ship_code is not null and 
+  I.sales_status IN ('accept','deliver','complete') 
+  <include refid="searchList"/> 
+  <include refid="instructionGroup"/>  
+  LIMIT #{pageStart}, #{perPageNum} 
+  </select>
+  
+  
+  <select id="shippingTotalCount" resultMap="ShippingDTO">
+  select S.ship_code, S.order_code, S.ship_date, S.progress_status, I.order_date, B.name as company_name  
+  <include refid="shippingJoin"/>
+  where S.ship_code is not null and 
+  I.sales_status IN ('accept','deliver','complete')
+  <include refid="searchList"/>  
+  <include refid="instructionGroup"/>   
+  </select>
+  
+  
+  <select id="countShipProgressing" resultType="Integer">
+  select count(progress_status) from shipping 
+  where progress_status = #{progress_status} 
+  and ship_code is not null
+  </select>
+
+  
+  <update id="updateShipProgressing">
+  update shipping 
+  set progress_status = #{progress_status} 
+  where order_code = #{order_code} 
+  </update>
+  
+  <update id="udpateSaleStatus">
+  update sales_order_info 
+  set sales_status = #{sales_status} 
+  where order_code =#{order_code}
+  </update>
+  
+  <select id="getshipContent" resultMap="ShippingDTO">
+  select P.sales_code, P.sales_quantity, P.processing_reg, P.order_code, M.name
+  from sales_order_product P 
+  left join meta_data_product M 
+  on P.product_code = M.product_code 
+  where order_code =#{order_code} 
+  </select>
+  
+
+  
+
+ 
+  
+  </mapper>

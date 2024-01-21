@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mes2.mapper.outMapper">
+
+	<resultMap type="com.mes2.materials.domain.OutDTO" id="oDTO">
+		<result property="out_index" column="out_index"/>
+		<result property="out_code" column="out_code"/>
+		<result property="based_code" column="based_code"/>
+		<result property="product_code" column="product_code"/>
+		<result property="quantity" column="quantity"/>
+		<result property="status" column="status"/>
+		<result property="out_type" column="out_type"/>
+		<result property="out_request_date" column="out_request_date"/>
+		<result property="out_regdate" column="out_regdate"/>
+		<association property="pdto" resultMap="pdto"></association>
+		<collection property="opList" resultMap="opDTO"></collection>
+	</resultMap>
+	
+	<resultMap type="com.mes2.materials.domain.productDTO" id="pdto">
+		<id property="product_code" column="product_code"/>
+		<result property="product_code" column="product_code"/>
+		<result property="name" column="name"/>
+		<result property="category" column="category"/>
+		<result property="unit" column="unit"/>
+		<result property="production_status" column="production_status"/>
+	</resultMap>
+	
+	<resultMap type="com.mes2.materials.domain.OpDTO" id="opDTO">
+		<id property="out_code" column="out_code"/>
+		<result property="out_product_index" column="out_product_index"/>
+		<result property="out_code" column="out_code"/>
+		<result property="product_code" column="product_code"/>
+		<result property="pd_lot" column="pd_lot"/>
+		<result property="out_quantity" column="out_quantity"/>
+	</resultMap>
+	
+
+	<!-- 출고 목록 조회 -->
+	<select id="getOutList" resultMap="oDTO">
+		SELECT * FROM out_warehouse
+		LEFT JOIN meta_data_product
+		ON out_warehouse.product_code = meta_data_product.product_code
+		<where>
+			<if test="status != null and !status.equals('')">
+				AND out_warehouse.status = #{status}
+			</if>
+			<if test="startDate != null and endDate != null and !startDate.equals('') and !endDate.equals('') ">
+                AND out_warehouse.out_request_date BETWEEN CAST(#{startDate} as DATE) AND CAST(#{endDate} as DATE) + 1
+			</if>
+			<if test="product_code != null and !product_code.equals('')">
+				AND out_warehouse.product_code LIKE concat('%' , #{product_code}, '%')
+			</if>
+		</where>
+		ORDER BY status DESC, out_request_date
+		LIMIT #{cri.startPage}, #{cri.pageSize}
+	</select>
+	
+	<!-- 목록 개수 조회 -->
+	<select id="getTotalOutCount" resultType="int">
+		SELECT count(*) FROM out_warehouse 
+		<where>
+			<if test="status != null and !status.equals('')">
+				AND status = #{status}
+			</if>
+			<if test="startDate != null and endDate != null and !startDate.equals('') and !endDate.equals('') ">
+                AND out_request_date BETWEEN CAST(#{startDate} as DATE) AND CAST(#{endDate} as DATE) + 1
+			</if>
+			<if test="product_code != null and !product_code.equals('')">
+				AND product_code LIKE concat('%' , #{product_code}, '%')
+			</if>
+		</where>
+	</select>
+	
+	<!-- 출고 상세 조회(출고코드 O) -->
+	<select id="getOutDetail" resultType="com.mes2.materials.domain.OpDTO">
+		SELECT * FROM out_warehouse_product ow
+		LEFT JOIN meta_data_product mdp
+		ON ow.product_code = mdp.product_code
+		WHERE out_code = #{out_code}
+	</select>
+	
+	<!-- 출고 상세 조회(출고코드 X) -->
+	<select id="getOutInfo" resultType="com.mes2.materials.domain.OutDTO">
+		SELECT * FROM out_warehouse 
+		WHERE out_index = #{out_index}
+	</select>
+	
+	<!-- 출고 품목 재고 조회 -->
+	<select id="getStockList" resultType="com.mes2.materials.domain.StockDTO">
+		SELECT * FROM stock
+		WHERE product_code = #{product_code} AND quantity != 0
+	</select>
+	
+	<!-- 출고 품목 등록 -->
+	<insert id="insertOutProduct">
+		INSERT INTO out_warehouse_product (out_code, product_code, pd_lot, out_quantity) 
+		VALUES
+		<foreach collection="stockList" item="stockDTO" separator="," close=";">
+			(CONCAT((SELECT code_group FROM common_code WHERE code_group_name = '출고'), #{out_code}), #{stockDTO.product_code}, #{stockDTO.pd_lot}, #{stockDTO.useQuantity})
+		</foreach>
+	</insert>
+	
+	<!-- 재고 감소 -->
+	<update id="decreaseStock">
+		<foreach collection="list" item="stockDTO" separator=";">
+			UPDATE stock 
+			SET quantity = quantity - #{stockDTO.useQuantity}
+			WHERE stock_index = #{stockDTO.stock_index} 
+		</foreach>
+	</update>
+
+	<!-- 출고 목록 업데이트 -->
+	<update id="updateOutInfo">
+		UPDATE out_warehouse 
+        SET out_code = CONCAT((SELECT code_group FROM common_code WHERE code_group_name = '출고'), #{out_code}), status = #{status}, out_regdate = now()
+		WHERE out_index = #{out_index} 
+	</update>
+	
+	<!-- 수주 상태 업데이트 -->
+	<update id="updateProductStatus">
+		UPDATE sales_order_product SET product_status = "complete"
+		WHERE order_code = #{based_code } AND product_code = #{product_code}
+	</update>
+	
+	<!-- 품목 전체 재고 가져오기 -->
+	<select id="getQuantitySum" resultType="int">
+		SELECT sum(quantity) FROM stock
+		WHERE product_code = #{product_code}
+	</select>
+	
+	<!-- 생산 지시 수량 가져오기 -->
+	<select id="getInsSum" resultType="int">
+		SELECT IFNULL(sum(sales_quantity),0) FROM instructions 
+		WHERE mdp_code = #{product_code} AND state = 'requested'
+	</select>
+	
+	<!-- 생산 지시 등록 -->
+	<insert id="insertIns">
+		INSERT INTO instructions (mdp_code, type, sop_code, state, sales_quantity) 
+		VALUES(#{mdp_code}, 'S', #{sop_code}, 'requested', #{sales_quantity})
+	</insert>
+	
+	<!-- Stock 테이블 출고 예정 수량 입력 -->
+<!-- 	<update id="updatePlannedQuantity"> -->
+<!-- 		<foreach collection="list" item="stockDTO" separator=";"> -->
+<!-- 			UPDATE stock  -->
+<!-- 			SET planned_quantity = #{stockDTO.planned_quantity}  -->
+<!-- 			WHERE stock_index = #{stockDTO.stock_index} -->
+<!-- 		</foreach> -->
+<!-- 	</update> -->
+</mapper>

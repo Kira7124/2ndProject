@@ -1,0 +1,241 @@
+@charset "UTF-8";
+
+@font-face {
+    font-family: 'MaplestoryOTFBold';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-04@2.1/MaplestoryOTFBold.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+
+* {
+  font-family: 'MaplestoryOTFBold';
+  text-decoration: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.header {
+  position: fixed;
+  height: 80px;
+  width: 100%;
+  padding: 0 20px;
+  z-index: 100;
+}
+
+.header .nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.header .nav .logo {
+  font-size: 20px;
+  color: #fff;
+  text-decoration: none; /* 여기에 추가 */
+}
+
+.header .nav .logo:hover {
+  text-decoration: none; /* hover 상태에서도 밑줄이 나타나지 않도록 추가 */
+}
+
+.header .nav .nav-item {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 25px;
+}
+
+.header .nav .nav-item .link {
+  color: #fff;
+  transition: 0.2s ease;
+}
+
+.header .nav .nav-item .link:hover {
+  color: #d9d9d9;
+}
+
+.btn {
+  padding: 6px 24px;
+  background: #B2EBDB;
+  border: 2px solid #fff;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.home {
+  position: relative;
+  height: 100vh;
+  width: 100%;
+  background: url(bg3.jpg);
+  background-size: cover;
+  background-position: center;
+}
+
+.home::before {
+  content: "";
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.4s ease-out;
+}
+
+.home.show::before {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.home .form-container {
+  position: fixed;
+  max-width: 320px;
+  width: 100%;
+  top: 50%;
+  left: 50%;
+  background: #fff;
+  transform: translate(-50%, -50%) scale(1.2);
+  border-radius: 12px;
+  padding: 25px;
+  transition: 0.4s ease-out;
+  z-index: 101;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.3s ease-out;
+}
+
+.home.show .form-container {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.home .form-container .close-form {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  color: #0b0217;
+  cursor: pointer;
+  opacity: 0.7;
+  font-size: 22px;
+}
+
+.home .form-container form h2 {
+  font-size: 22px;
+  text-align: center;
+  color: #0b0217;
+}
+
+.home .form-container form .input-box {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  margin-top: 30px;
+}
+
+.home .form-container form .input-box input {
+  height: 100%;
+  width: 100%;
+  outline: none;
+  border: none;
+  padding: 0 30px;
+  color: #333;
+  border-bottom: 1.5px solid #aaa;
+  transition: 0.2s ease;
+}
+
+.home .form-container form .input-box input:focus {
+  border-color: #7d2ae8;
+}
+
+.home .form-container form .input-box i {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  color: #707070;
+}
+
+.home .form-container form .input-box i.email,
+.home .form-container form .input-box i.password {
+  left: 0;
+}
+
+.home .form-container form .input-box i.pass-hide {
+  right: 0;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.home .form-container form .options-field {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.home .form-container form .options-field .checkbox {
+  display: flex;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.home .form-container form .options-field .checkbox input {
+  accent-color: #7d2ae8;
+}
+
+.home .form-container form .options-field .checkbox label {
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  color: #0b0217;
+}
+
+.home .form-container form a {
+  font-size: 12px;
+  color: #7d2ae8;
+}
+
+.home .form-container form a:hover {
+	  text-decoration: none;
+	
+}
+
+.home .form-container form .btn {
+  background: #7d2ae8;
+  margin-top: 30px;
+  width: 100%;
+  padding: 10px 0;
+  border-radius: 10px;
+}
+
+.home .form-container form .login-signup {
+  font-size: 12px;
+  margin-top: 15px;
+  text-align: center;
+}
+
+.signup-form {
+  display: none;
+}
+
+.form-container.active .login-form {
+  display: none;
+}
+
+.form-container.active .signup-form {
+  display: block;
+}
+
+
+

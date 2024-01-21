@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <mapper namespace="com.mes2.mapper.SalesMapper">
+  
+  <resultMap id="SalesDTO" type="com.mes2.sales.domain.SalesDTO">
+  	<result property="order_code" column="order_code"/>
+  	<result property="company_name" column="company_name"/> 
+  	<result property="product_name" column="name"/>
+  	<result property="order_date" column="order_date"/>
+  	<result property="request_date" column="request_date"/> 
+  	<result property="product_code" column="product_code"/>
+  	<result property="sales_quantity" column="sales_quantity"/>
+  	<result property="user_id" column="user_id"/>
+  	<result property="sales_code" column="sales_code"/>
+  	<result property="product_status" column="product_status"/>
+  	<result property="processing_reg" column="processing_reg"/>
+  	<result property="stock_quantity" column="stock_quantity"/>
+  	<result property="orderStatus" column="orderStatus"/>
+  </resultMap>
+  
+  
+  <resultMap id="AcceptSaveDTO" type="com.mes2.sales.domain.AcceptSaveDTO">
+  	<result property="order_code" column="order_code"/>
+  	<result property="company_name" column="name"/> 
+  	<result property="company_code" column="company_code"/> 
+  	<result property="company_address" column="address"/> 
+  	<result property="company_call" column="call"/>
+  	<result property="request_date" column="request_date"/> 
+  	<result property="user_id" column="user_id"/> 
+  	<result property="user_name" column="user_name"/>
+  	<result property="user_department" column="user_department"/>
+  	<result property="user_position" column="user_position"/>
+  	<result property="user_auth" column="user_auth"/>
+  	<result property="instructions" column="instructions"/>
+  </resultMap>
+  
+   <sql id="searchDate">
+    <choose>
+        <when test="startDay != null and endDay != null">
+            and I.request_date BETWEEN DATE_FORMAT(#{startDay}, '%Y-%m-%d 00:00:00') AND DATE_FORMAT(#{endDay}, '%Y-%m-%d 23:59:59')  
+        </when>
+        <when test="startDay != null and endDay == null">
+           AND I.request_date BETWEEN DATE_FORMAT(#{startDay}, '%Y-%m-%d 00:00:00') AND DATE_FORMAT(#{startDay}, '%Y-%m-%d 23:59:59')  
+        </when>
+        <when test="startDay == null and endDay != null">
+            and I.request_date BETWEEN DATE(NOW()) AND DATE_FORMAT(#{endDay}, '%Y-%m-%d 23:59:59')  
+        </when>  
+    </choose>
+  </sql>
+  
+  
+     <sql id="orderSearchDate">
+    <choose>
+        <when test="startDay != null and endDay != null">
+            and I.order_date BETWEEN DATE_FORMAT(#{startDay}, '%Y-%m-%d 00:00:00') AND DATE_FORMAT(#{endDay}, '%Y-%m-%d 23:59:59')  
+        </when>
+        <when test="startDay != null and endDay == null">
+           AND I.order_date BETWEEN DATE_FORMAT(#{startDay}, '%Y-%m-%d 00:00:00') AND DATE_FORMAT(#{startDay}, '%Y-%m-%d 23:59:59')  
+        </when>
+        <when test="startDay == null and endDay != null">
+            and I.order_date BETWEEN DATE(NOW()) AND DATE_FORMAT(#{endDay}, '%Y-%m-%d 23:59:59')  
+        </when>  
+    </choose>
+  </sql>
+  
+  
+  
+  <sql id="salesJoin">
+    from  sales_order_info I 
+	left join meta_data_business B 
+	on I.company_code = B.company_code 
+	left join sales_order_product P 
+	on I.order_code = P.order_code 
+	left join meta_data_product M 
+	on M.product_code = P.product_code 
+  </sql>
+  
+  <sql id="salesGroup">
+  group by I.order_code, B.name, I.order_date, I.request_date
+  </sql>
+  
+  <sql id="searchList">
+  
+	<if test="type == 'order_code'">
+	    and I.order_code like concat('%',#{search},'%')
+	    <include refid="searchDate"/>
+	</if>
+		
+  	<if test="type == 'company_name'">
+  	and B.name like concat('%',#{search},'%') 
+  	<include refid="searchDate"/> 
+  	</if>  
+  		
+  	<if test="type == 'order_date'">
+  	<include refid="orderSearchDate"/> 
+  	</if> 	
+  	
+  	<if test="type == 'request_date'">
+  	<include refid="searchDate"/> 
+  	</if>
+  	
+  	<if test="newOrder == 'true'">
+    and DATE(I.request_date) = DATE(NOW())
+	</if>
+	
+	<if test="instructions != null and instructions != ''">
+	    and I.instructions = #{instructions}
+	</if>
+	
+	<if test="userId != null and userId != ''">
+		and I.user_id =#{userId}
+	</if>
+	
+  	<if test="newO == 'true'">
+    and DATE(I.request_date) = DATE(NOW())
+	</if>
+	
+	<if test="instruct != null and instruct != ''">
+	    and I.instructions = #{instruct}
+	</if>
+  </sql>
+  
+ 
+  
+   <select id="getSalesList" resultMap="SalesDTO" >
+    select I.order_code, B.name AS company_name ,I.order_date, I.request_date , I.instructions 
+     <include refid="salesJoin"/> 
+     <where>
+     I.sales_status = #{sales_status} 
+     <include refid="searchList"/>
+     </where>
+     <include refid="salesGroup"/>
+    order by I.request_date ASC 
+    LIMIT #{pageStart}, #{perPageNum} 
+  </select>
+  
+     <select id="listCount" resultMap="SalesDTO" >
+    select I.order_code, B.name AS company_name ,I.order_date, I.request_date , I.instructions 
+     <include refid="salesJoin"/> 
+     <where>
+     I.sales_status = #{sales_status}
+     <include refid="searchList"/>
+     </where>
+     <include refid="salesGroup"/>
+    order by I.request_date ASC 
+    
+  </select>
+  
+  
+  
+  <select id="getPlanNewCnt" resultType="Integer">
+  select count(order_code) from sales_order_info I
+  where I.sales_status =#{sales_status} 
+  <include refid="searchList"/> 
+  </select>
+  
+  <select id="getPlanWaitCnt" resultType="Integer">
+    select count(order_code) from sales_order_info 
+    where sales_status ='requested' 
+  </select>
+  
+    <select id="getPlanContent"  resultMap="SalesDTO">
+    select P.product_code , M.name  , P.sales_quantity ,I.order_code 
+    <include refid="salesJoin"/>
+    <where>
+    I.order_code = #{order_code} and sales_status = 'requested' 
+    </where>
+    </select>
+    
+    <update id="rejectSales">
+    update sales_order_info 
+    set sales_status = 'reject' 
+    where order_code in 
+     <foreach collection="list" item="code" open="(" close=")" separator=",">
+        #{code}
+    </foreach>
+    </update>
+    
+    <select id="getStockQuantity"  resultMap="SalesDTO">
+	select  
+    (select IFNULL(SUM(quantity),0 )from  stock where product_code = #{product_code}) -
+    (select IFNULL(SUM(quantity),0) from out_warehouse where product_code = #{product_code} AND status = 'waiting') AS stock_quantity,
+    name, 
+    product_code 
+    from meta_data_product 
+    where product_code = #{product_code} 
+    </select>
+    
+
+  <update id="registerPlan">
+  update sales_order_info 
+  set sales_status = 'accept', 
+  user_id = #{user_id} 
+  where order_code in 
+  <foreach collection="order_code" item="code" open="(" close=")" separator=",">
+        #{code}
+    </foreach>
+  </update>
+  
+  <select id="getProdctCode"  resultMap="SalesDTO" >
+  select product_code, order_code from sales_order_product where order_code in 
+  <foreach collection="list" item="code" open="(" close=")" separator=",">
+        #{code}
+    </foreach>
+  </select>
+  
+<update id="makeSalesCode">
+    update sales_order_product P
+    join sales_order_info I 
+    on I.order_code = P.order_code 
+    set P.sales_code = concat_ws('-',(select code_group from common_code where code_group_name='수주'), P.order_code, P.product_code,P.sales_quantity), 
+    I.acceptance_date = now(),
+    P.product_status = 'waiting'
+    where (I.order_code, P.product_code) in
+    <foreach collection="list" item="item"  open="(" close=")" separator=",">
+        (#{item.order_code}, #{item.product_code})
+    </foreach>
+</update>
+
+
+  
+  <select id="checkRegPw" resultType="String">
+  select user_pw from employees where user_id = #{user_id} 
+  </select>
+  
+ 
+  
+  <select id="getAcceptContent" resultMap="SalesDTO">
+  select P.sales_code, M.name , P.sales_quantity, P.product_status,P.processing_reg, P.product_code , P.order_code, I.instructions
+  <include refid="salesJoin"/>
+  where P.order_code =#{order_code} 
+  </select>
+  
+  <update id="updateAcceptStatus"> 
+  update sales_order_product 
+  set processing_reg =
+    <foreach collection="processing_reg" item="reg" open="(" close=")" separator=",">
+        #{reg}
+    </foreach>
+    where sales_code in 
+     <foreach collection="sales_code" item="code" open="(" close=")" separator=",">
+        #{code}
+    </foreach>
+  </update>
+  
+  <insert id="stockReg">
+  insert into out_warehouse 
+  (quantity,product_code,out_type,based_code,status) 
+  values (#{sales_quantity}, #{product_code}, 'S', #{order_code},'waiting')
+  </insert>
+  
+  <update id='changeProductStatus'>
+  update sales_order_product 
+  set product_status = #{product_status}, 
+  processing_reg = #{processing_reg} 
+  where sales_code =#{sales_code} 
+  </update>
+  
+  <insert id="productInst">
+  insert into instructions 
+  (sop_code, sales_quantity, mdp_code, state, type) 
+  values 
+  (#{sales_code},#{lack_quantity},#{product_code},'requested', 'O') 
+  </insert>
+  
+  <update id="updateStockQuan">
+  update meta_data_product 
+  set quantity = (quantity - #{stock_quantity}) 
+  where product_code = #{product_code} 
+  </update>
+  
+<insert id="insertShippingPlan" >
+    insert into shipping (order_code, scheduled_date) 
+    values (#{order_code}, #{scheduled_date}) 
+</insert>
+
+<select id="checkOrdeDate" resultType="java.util.Date">
+	select order_date from sales_order_info 
+	where order_code = #{order_code} 
+</select>
+
+<select id="makeOrderStates" resultMap="SalesDTO">
+ select processing_reg from sales_order_product where order_code= #{order_code} 
+</select>
+
+
+
+
+  
+  <select id="getOrderInfo" resultMap="AcceptSaveDTO">
+  select I.request_date, E.user_id, E.user_name, E.user_department, E.user_position, E.user_auth, 
+  B.company_code, B.name, B.address, B.call 
+  from employees E 
+  join sales_order_info I on E.user_id = I.user_id 
+  join meta_data_business B on B.company_code = I.company_code 
+  where I.order_code = #{order_code} 
+  </select>
+  
+  <select id="getOrderPlanInfo" resultMap="AcceptSaveDTO">
+  select B.company_code, B.name, B.address, B.call 
+  from meta_data_business B 
+  join sales_order_info I on B.company_code = I.company_code 
+  where I.order_code = #{order_code} 
+  </select>
+  
+  
+ <update id="updateInstruction">
+ update sales_order_info 
+ set instructions = 'Y' 
+ where order_code =#{order_code} 
+ </update>
+ 
+
+ 
+ <select id="getRegUser" resultMap="SalesDTO">
+ select user_id from sales_order_info where order_code =#{order_code} 
+ </select>
+ 
+
+
+  </mapper>

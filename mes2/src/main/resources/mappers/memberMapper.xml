@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  
+  
+  
+  <mapper namespace="com.mes2.mapper.MemberMapper">
+  
+  	<!-- 로그인 -->
+  		<select id ="loginMember" resultType="com.mes2.system.domain.MemberDTO">
+  			select * from employees
+  			where user_id=#{user_id} and user_pw=#{user_pw}
+  		</select>
+  
+  
+  	<!-- 사원정보조회  -->
+  		<select id="getMember" resultType="com.mes2.system.domain.MemberDTO">
+  			select * from employees
+  			where user_id=#{user_id}
+  		</select>
+  
+  
+  	<!--  사원정보수정  -->
+    <update id="updateMember"> 
+    	update employees set user_department=#{user_department},user_position=#{user_position},user_auth=#{user_auth},user_img=#{user_img},menu_status=#{menu_status},user_address=#{user_address},user_updatedate=now() where user_pw=#{user_pw} and user_num=#{user_num}
+    </update>
+  
+  
+  
+    <!-- 사원정보삭제 -->
+  	<delete id="deleteMember">
+  		delete from employees 
+  		where user_pw =#{user_pw} and user_id=#{user_id}
+  	</delete>
+  
+   
+  	
+  	<!-- 사원등록 -->
+  	<insert id="insertMember">
+  		insert into employees(user_id,user_pw,user_name,user_department,user_position,user_address,user_jumin,user_joindate,user_tel,user_auth,menu_status)
+  		values(#{user_id},#{user_pw},#{user_name},#{user_department},#{user_position},#{user_address},#{user_jumin},#{user_joindate},#{user_tel},#{user_auth},#{menu_status})	
+  	</insert>
+  	
+  
+ 	<!--사원목록리스트--> 	
+  	<select id="getMemberList" resultType="com.mes2.system.domain.MemberDTO">
+  		select*from employees order by user_num asc
+  	</select>
+  	
+  	
+  
+  	<!-- 아이디중복체크  -->
+ 	<select id="checkID" resultType="boolean">
+   		 SELECT COUNT(*) > 0 FROM employees WHERE user_id=#{user_id}
+ 	</select>
+  
+  
+	<!-- 파일업로드 -->
+  	<update id = "fileUpload">
+  		update employees set user_img=#{user_img}
+  		where user_id=#{user_id} and user_pw=#{user_pw}
+  	</update>
+  
+  
+  
+  	<!-- 메뉴리스트출력 -->
+  	<select id="getMenuList" resultType="com.mes2.system.domain.MemberDTO">
+  		select distinct user_auth,menu_status from employees 
+  	</select>
+  	
+  	
+  	
+  	
+  	<!-- 메뉴상태수정 2개이상 적용을 위해 List 로받기-->
+  	<select id="updateMenu" resultType="com.mes2.system.domain.MemberDTO">
+  		update employees set menu_status=#{menu_status} where user_auth=#{user_auth}
+  	</select>
+  	
+  	
+  	
+  	
+	  	<!-- 사원검색기능 -->
+	  <select id="searchMember" resultType="com.mes2.system.domain.MemberDTO">
+	    select * from employees
+	    <where>
+	        <if test="searchOption == 'option1'">
+	            and user_name like concat('%', #{searchWord}, '%')
+	        </if>
+	        <if test="searchOption == 'option2'">
+	            and user_department like concat('%', #{searchWord}, '%')
+	        </if>
+	        <if test="searchOption == 'option3'">
+	            and user_position like concat('%', #{searchWord}, '%')
+	        </if>
+	    </where>
+	</select>
+  	
+  	
+  	
+  	
+  	 <!--  합산사원인원수  -->
+    <select id="totalMember" resultType="int"> select count(*) from employees </select>
+  	
+  	
+  	
+  	<!--  합산제품수  -->
+  	<select id="totalPd" resultType="Integer"> 
+  		select sum(pd_quantity) AS total_quantity from product
+  	 </select>
+  	 
+  	 
+  	 
+  	 
+    <!--  합산입고수  -->
+    <select id="totalIn" resultType="Integer"> 
+    	select sum(quantity) AS total_quantity from in_warehouse where status != 'waiting' 
+    </select>
+    
+    
+    
+    
+    <!--  합산출고수  -->
+    <select id="totalOut" resultType="Integer">
+    	 select sum(quantity) AS total_quantity from out_warehouse where status != 'waiting'
+     </select>
+  	
+  	
+  	
+  	<!-- 합산 양품갯수 -->
+  	<select id="okProduct" resultType="Integer">
+  		select sum(quantity) AS total_quantity from instructions
+  	</select>
+  	
+  
+  
+  
+  
+  	<!--  합산 불량품갯수 -->
+	<select id="noProduct" resultType="Integer">
+	  	 select sum(fault) AS total_quantity from instructions
+	</select>
+  
+  
+  
+  
+  
+  
+  
+   <!-- 1번라인 완료율 -->
+   <select id ="firstLine" resultType="Integer">
+   		SELECT 
+			 CAST((COUNT(CASE WHEN status = 'complete' THEN 1 END) / 
+			 COUNT(CASE WHEN status IN ('complete', 'waiting') THEN 1 END)) * 100 AS SIGNED) AS completion_rate
+		FROM 
+			 production_line
+		WHERE 
+			 line = 1
+		GROUP BY 
+			 line;  
+   </select> 	
+  
+  <!-- 2번라인 완료율 -->
+   <select id ="secondLine" resultType="Integer">
+   		SELECT 
+			 CAST((COUNT(CASE WHEN status = 'complete' THEN 1 END) / 
+			 COUNT(CASE WHEN status IN ('complete', 'waiting') THEN 1 END)) * 100 AS SIGNED) AS completion_rate
+		FROM 
+			 production_line
+		WHERE 
+			 line = 2
+		GROUP BY 
+			 line;  
+   </select> 	
+  
+   <!-- 3번라인 완료율 -->
+   <select id ="thirdLine" resultType="Integer">
+   		SELECT 
+			 CAST((COUNT(CASE WHEN status = 'complete' THEN 1 END) / 
+			 COUNT(CASE WHEN status IN ('complete', 'waiting') THEN 1 END)) * 100 AS SIGNED) AS completion_rate
+		FROM 
+			 production_line
+		WHERE 
+			 line = 3
+		GROUP BY 
+			 line;  
+   </select> 	
+  
+     <!-- 4번라인 완료율 -->
+   <select id ="forthLine" resultType="Integer">
+   		SELECT 
+			 CAST((COUNT(CASE WHEN status = 'complete' THEN 1 END) / 
+			 COUNT(CASE WHEN status IN ('complete', 'waiting') THEN 1 END)) * 100 AS SIGNED) AS completion_rate
+		FROM 
+			 production_line
+		WHERE 
+			 line = 4
+		GROUP BY 
+			 line;  
+   </select> 
+  
+  
+       <!-- 5번라인 완료율 -->
+   <select id ="fifthLine" resultType="Integer">
+   		SELECT 
+			 CAST((COUNT(CASE WHEN status = 'complete' THEN 1 END) / 
+			 COUNT(CASE WHEN status IN ('complete', 'waiting') THEN 1 END)) * 100 AS SIGNED) AS completion_rate
+		FROM 
+			 production_line
+		WHERE 
+			 line = 5
+		GROUP BY 
+			 line;  
+   </select>
+  
+  
+  
+         <!-- 6번라인 완료율 -->
+   <select id ="sixthLine" resultType="Integer">
+   		SELECT 
+			 CAST((COUNT(CASE WHEN status = 'complete' THEN 1 END) / 
+			 COUNT(CASE WHEN status IN ('complete', 'waiting') THEN 1 END)) * 100 AS SIGNED) AS completion_rate
+		FROM 
+			 production_line
+		WHERE 
+			 line = 6
+		GROUP BY 
+			 line;  
+   </select>
+  
+  
+  
+         <!-- 7번라인 완료율 -->
+   <select id ="sevenLine" resultType="Integer">
+   		SELECT 
+			 CAST((COUNT(CASE WHEN status = 'complete' THEN 1 END) / 
+			 COUNT(CASE WHEN status IN ('complete', 'waiting') THEN 1 END)) * 100 AS SIGNED) AS completion_rate
+		FROM 
+			 production_line
+		WHERE 
+			 line = 7
+		GROUP BY 
+			 line;  
+   </select>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+ 
+	 <!-- 페이징처리 메퍼1 --> 
+	 <select id="listMember" resultType="com.mes2.system.domain.MemberDTO">
+	 	select * from employees
+	 	limit #{startPage},#{pageSize}
+	 </select>
+	  
+	  
+	  
+	<!-- 전체 인원수 조회 (페이징2) -->
+	<select id = "countMember" resultType="int">
+		<![CDATA[ select count(*) from employees where user_num > 0 ]]>
+	</select>
+	  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  	
+  	
+  	
+  	
+  	
+  
+  </mapper>
